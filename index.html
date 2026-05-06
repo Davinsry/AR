@@ -1,119 +1,231 @@
 <!DOCTYPE html>
 <html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>WebAR - Nico Davin (XI PPLG B)</title>
 
-  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.min.js"></script>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebAR – Hai Cantikk 💖</title>
+
+  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      overflow: hidden;
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background: #000;
-      width: 100vw;
-      height: 100vh;
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
 
-    /* UI di atas scene */
+    body {
+      font-family: 'Georgia', serif;
+      background: #000;
+      overflow: hidden;
+    }
+
+    /* UI Overlay */
     #ui {
       position: fixed;
-      inset: 0;
-      z-index: 10;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       pointer-events: none;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 16px;
+      z-index: 999;
     }
 
+    /* Status badge */
     #status {
-      width: fit-content;
-      padding: 8px 16px;
-      border-radius: 999px;
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      padding: 10px 22px;
+      border-radius: 99px;
       font-size: 13px;
-      font-weight: 700;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      background: rgba(255, 193, 7, 0.92);
-      color: #332200;
-      transition: background .3s, color .3s;
+      letter-spacing: 0.08em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.4s ease;
+      pointer-events: none;
+    }
+
+    #status .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #f87171;
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+
+    #status.found .dot {
+      background: #4ade80;
+      animation: none;
     }
 
     #status.found {
-      background: rgba(40, 167, 69, 0.92);
-      color: #fff;
+      border-color: rgba(74, 222, 128, 0.4);
+      background: rgba(0, 0, 0, 0.75);
     }
 
-    #hint {
-      align-self: center;
-      background: rgba(0,0,0,0.45);
-      color: #fff;
-      padding: 10px 18px;
-      border-radius: 12px;
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.5;
+        transform: scale(0.8);
+      }
+    }
+
+    /* Instruction card */
+    #instruction {
+      position: fixed;
+      bottom: 36px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: rgba(255, 255, 255, 0.85);
+      padding: 14px 24px;
+      border-radius: 16px;
       font-size: 12px;
-      font-weight: 500;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
       text-align: center;
-      line-height: 1.5;
+      line-height: 1.7;
+      max-width: 320px;
+      pointer-events: all;
     }
 
-    #hint a {
-      color: #7ee8fa;
+    #instruction a {
+      color: #f9a8d4;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    #instruction a:hover {
       text-decoration: underline;
+    }
+
+    /* Corner watermark */
+    #watermark {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.25);
+      letter-spacing: 0.1em;
+      pointer-events: none;
     }
   </style>
 </head>
+
 <body>
+
+  <!-- AR Scene -->
+  <a-scene embedded
+    arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+    renderer="logarithmicDepthBuffer: true; antialias: true;" vr-mode-ui="enabled: false"
+    loading-screen="dotsColor: #f9a8d4; backgroundColor: black">
+
+    <!-- Hiro Marker -->
+    <a-marker preset="hiro" id="hiro-marker">
+
+      <!-- Gradient box via shader -->
+      <a-entity id="main-box" geometry="primitive: box; width: 0.6; height: 0.6; depth: 0.6"
+        material="shader: flat; color: #ec4899"
+        animation="property: rotation; to: 0 360 0; loop: true; dur: 3000; easing: linear"
+        animation__scale="property: scale; from: 1 1 1; to: 1.08 1.08 1.08; loop: true; dur: 900; dir: alternate; easing: easeInOutSine"
+        position="0 0.3 0">
+      </a-entity>
+
+      <!-- Inner glow sphere -->
+      <a-entity geometry="primitive: sphere; radius: 0.28"
+        material="shader: flat; color: #f472b6; opacity: 0.35; transparent: true"
+        animation="property: rotation; to: 360 0 360; loop: true; dur: 4000; easing: linear"
+        animation__pulse="property: material.opacity; from: 0.2; to: 0.5; loop: true; dur: 1200; dir: alternate; easing: easeInOutSine"
+        position="0 0.3 0">
+      </a-entity>
+
+      <!-- "Hai Cantikk" teks 3D -->
+      <a-entity text="value: Hai Cantikk 💖; color: #fff; align: center; width: 2.2; font: mozillavr"
+        position="0 0.85 0"
+        animation__float="property: position; from: 0 0.85 0; to: 0 0.98 0; loop: true; dur: 1600; dir: alternate; easing: easeInOutSine"
+        scale="1 1 1">
+      </a-entity>
+
+      <!-- Sub-teks kecil di bawah box -->
+      <a-entity text="value: You're beautiful 🌸; color: #f9a8d4; align: center; width: 1.8; font: mozillavr"
+        position="0 -0.05 0"
+        animation__float2="property: position; from: 0 -0.05 0; to: 0 0.02 0; loop: true; dur: 2000; dir: alternate; easing: easeInOutSine">
+      </a-entity>
+
+      <!-- Ring dekoratif -->
+      <a-entity geometry="primitive: torus; radius: 0.55; radiusTubular: 0.015"
+        material="shader: flat; color: #f472b6; opacity: 0.7; transparent: true" position="0 0.3 0" rotation="90 0 0"
+        animation="property: rotation; from: 90 0 0; to: 90 360 0; loop: true; dur: 5000; easing: linear">
+      </a-entity>
+
+      <!-- Ring ke-2 miring -->
+      <a-entity geometry="primitive: torus; radius: 0.45; radiusTubular: 0.01"
+        material="shader: flat; color: #e879f9; opacity: 0.5; transparent: true" position="0 0.3 0" rotation="45 0 0"
+        animation="property: rotation; from: 45 360 0; to: 45 0 0; loop: true; dur: 3500; easing: linear">
+      </a-entity>
+
+    </a-marker>
+
+    <!-- Kamera AR -->
+    <a-entity camera></a-entity>
+
+  </a-scene>
 
   <!-- UI Overlay -->
   <div id="ui">
-    <div id="status">Mencari Marker...</div>
-    <div id="hint">
-      Arahkan kamera ke <a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" target="_blank">Marker Hiro</a>
+    <div id="status">
+      <span class="dot"></span>
+      <span id="status-text">Mencari Hiro Marker...</span>
     </div>
+
+    <div id="instruction">
+      Arahkan kamera ke <strong>Hiro Marker</strong><br />
+      <a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" target="_blank">
+        👆 Buka gambar Hiro Marker di sini
+      </a>
+      <br /><span style="opacity:0.6; font-size:11px;">Buka di tab lain → tampilkan di layar lain → arahkan kamera ke
+        sana</span>
+    </div>
+
+    <div id="watermark">WebAR · AR.js</div>
   </div>
-
-  <!-- Scene AR -->
-  <a-scene
-    embedded
-    vr-mode-ui="enabled: false"
-    arjs="sourceType: webcam; debugUIEnabled: false;"
-    renderer="alpha: true">
-
-    <a-marker preset="hiro" id="hiro-marker" emitevents="true">
-      <a-text
-        value="Hai Cantik"
-        align="center"
-        position="0 0.6 0"
-        color="#FFD1DC"
-        scale="2.5 2.5 2.5"
-        side="double"
-        font="exo2bold">
-      </a-text>
-    </a-marker>
-
-    <a-entity camera></a-entity>
-  </a-scene>
 
   <script>
     const marker = document.getElementById('hiro-marker');
-    const status = document.getElementById('status');
+    const statusEl = document.getElementById('status');
+    const statusText = document.getElementById('status-text');
+    const instruction = document.getElementById('instruction');
 
     marker.addEventListener('markerFound', () => {
-      status.className = 'found';
-      status.textContent = 'Target Ditemukan';
+      statusEl.classList.add('found');
+      statusText.textContent = 'Target Ditemukan ✓';
+      instruction.style.opacity = '0';
+      instruction.style.transition = 'opacity 0.5s';
     });
 
     marker.addEventListener('markerLost', () => {
-      status.className = '';
-      status.textContent = 'Mencari Marker...';
+      statusEl.classList.remove('found');
+      statusText.textContent = 'Mencari Hiro Marker...';
+      instruction.style.opacity = '1';
     });
   </script>
 
 </body>
+
 </html>
