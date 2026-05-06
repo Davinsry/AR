@@ -5,10 +5,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>WebAR – Hai Cantikk</title>
-
   <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-
   <style>
     * {
       margin: 0;
@@ -106,39 +104,24 @@
 
   <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" renderer="antialias: true;"
     vr-mode-ui="enabled: false">
+    <a-assets id="assets">
+      <canvas id="myCanvas" width="1024" height="512" crossorigin="anonymous"></canvas>
+    </a-assets>
 
     <a-marker preset="hiro" id="hiro-marker">
 
-      <!-- Tulisan utama "Hai Cantikk" -->
-      <a-text value="Hai Cantikk" color="#ff69b4" align="center" width="6" position="0 1.5 0" rotation="-90 0 0"
-        animation__float="property: position; from: 0 1.5 0; to: 0 1.7 0; loop: true; dur: 1600; dir: alternate; easing: easeInOutSine">
-      </a-text>
-
-      <!-- Emoji hati terpisah di bawah tulisan -->
-      <a-text value="💖 you're so beautiful 💖" color="#ffffff" align="center" width="4" position="0 0.9 0"
-        rotation="-90 0 0"
-        animation__float="property: position; from: 0 0.9 0; to: 0 1.05 0; loop: true; dur: 2000; dir: alternate; easing: easeInOutSine">
-      </a-text>
+      <!-- Plane utama dengan canvas texture -->
+      <a-plane id="textPlane" width="4" height="2" position="0 2.2 0" rotation="-90 0 0"
+        material="transparent:true; alphaTest:0.01;"
+        animation__float="property:position; from:0 2.2 0; to:0 2.6 0; loop:true; dur:1600; dir:alternate; easing:easeInOutSine">
+      </a-plane>
 
       <!-- Ring dekoratif -->
-      <a-torus color="#f472b6" radius="0.8" radius-tubular="0.01" position="0 0.01 0" rotation="90 0 0"
-        animation="property: rotation; from: 90 0 0; to: 90 360 0; loop: true; dur: 5000; easing: linear">
+      <a-torus color="#f472b6" radius="1.2" radius-tubular="0.015" position="0 0.01 0" rotation="90 0 0"
+        animation="property:rotation; from:90 0 0; to:90 360 0; loop:true; dur:4000; easing:linear">
       </a-torus>
 
-      <!-- Bintang kecil kiri -->
-      <a-tetrahedron color="#f9a8d4" radius="0.08" position="-1.1 0.5 0"
-        animation="property: rotation; to: 360 360 0; loop: true; dur: 2000; easing: linear"
-        animation__float="property: position; from: -1.1 0.5 0; to: -1.1 0.7 0; loop: true; dur: 1200; dir: alternate; easing: easeInOutSine">
-      </a-tetrahedron>
-
-      <!-- Bintang kecil kanan -->
-      <a-tetrahedron color="#e879f9" radius="0.07" position="1.1 0.5 0"
-        animation="property: rotation; to: 0 360 360; loop: true; dur: 2500; easing: linear"
-        animation__float="property: position; from: 1.1 0.5 0; to: 1.1 0.65 0; loop: true; dur: 1400; dir: alternate; easing: easeInOutSine">
-      </a-tetrahedron>
-
     </a-marker>
-
     <a-entity camera></a-entity>
   </a-scene>
 
@@ -146,16 +129,90 @@
     <span class="dot"></span>
     <span id="status-text">Scan layar laptop...</span>
   </div>
-
   <div id="instruction">
     Arahkan kamera HP ke <strong>layar laptop</strong><br />
     <a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" target="_blank">
-      👆 Buka Hiro Marker di laptop dulu
+      👆 Buka Hiro Marker di laptop
     </a><br />
-    <span style="opacity:0.5;font-size:11px;">Fullscreen marker biar lebih gampang kedeteksi</span>
+    <span style="opacity:0.5;font-size:11px;">Fullscreen biar gampang kedeteksi</span>
   </div>
 
   <script>
+    // Gambar ke canvas
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+
+    function drawCanvas() {
+      ctx.clearRect(0, 0, W, H);
+
+      // Background transparan
+      ctx.clearRect(0, 0, W, H);
+
+      // Glow effect
+      ctx.shadowColor = '#ff69b4';
+      ctx.shadowBlur = 60;
+
+      // Gradient teks
+      const grad = ctx.createLinearGradient(0, 0, W, H);
+      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(0.5, '#ff69b4');
+      grad.addColorStop(1, '#cc44ff');
+
+      // Tulisan utama
+      ctx.font = 'bold italic 140px Georgia, serif';
+      ctx.fillStyle = grad;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Hai Cantikk 💖', W / 2, H / 2 - 40);
+
+      // Sub teks
+      ctx.shadowBlur = 20;
+      ctx.font = '48px Georgia, serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.fillText("you're so beautiful ✨", W / 2, H / 2 + 80);
+    }
+
+    drawCanvas();
+
+    // Set ke material A-Frame setelah scene loaded
+    const scene = document.querySelector('a-scene');
+    scene.addEventListener('loaded', () => {
+      const plane = document.getElementById('textPlane');
+      plane.setAttribute('material', {
+        src: canvas,
+        transparent: true,
+        alphaTest: 0.01,
+        depthWrite: false
+      });
+    });
+
+    // Re-draw tiap frame biar shimmer
+    let hue = 0;
+    setInterval(() => {
+      hue = (hue + 1) % 360;
+      ctx.clearRect(0, 0, W, H);
+      ctx.shadowColor = `hsl(${330 + Math.sin(hue / 30) * 20}, 100%, 70%)`;
+      ctx.shadowBlur = 50 + Math.sin(hue / 20) * 20;
+
+      const grad = ctx.createLinearGradient(0, 0, W, H);
+      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(0.5, `hsl(${320 + Math.sin(hue / 25) * 20}, 100%, 75%)`);
+      grad.addColorStop(1, '#cc44ff');
+
+      ctx.font = 'bold italic 140px Georgia, serif';
+      ctx.fillStyle = grad;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Hai Cantikk 💖', W / 2, H / 2 - 40);
+
+      ctx.shadowBlur = 20;
+      ctx.font = '48px Georgia, serif';
+      ctx.fillStyle = `rgba(255,255,255,${0.7 + Math.sin(hue / 15) * 0.3})`;
+      ctx.fillText("you're so beautiful ✨", W / 2, H / 2 + 80);
+    }, 50);
+
+    // Marker events
     const marker = document.getElementById('hiro-marker');
     const statusEl = document.getElementById('status');
     const statusText = document.getElementById('status-text');
@@ -166,14 +223,12 @@
       statusText.textContent = 'Ketemu! 💖';
       instruction.classList.add('hide');
     });
-
     marker.addEventListener('markerLost', () => {
       statusEl.classList.remove('found');
       statusText.textContent = 'Scan layar laptop...';
       instruction.classList.remove('hide');
     });
   </script>
-
 </body>
 
 </html>
