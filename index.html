@@ -5,26 +5,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>WebAR - Nico Davin (XI PPLG B)</title>
 
-  <!-- A-Frame & AR.js CDN -->
+  <!-- A-Frame & AR.js (CDN stabil) -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.min.js"></script>
 
   <style>
-    * { box-sizing: border-box; }
-    body {
+    html, body {
       margin: 0;
+      padding: 0;
       overflow: hidden;
+      width: 100%;
+      height: 100%;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: #000;
     }
 
-    #ui-overlay {
-      position: absolute;
+    /* Biarkan AR.js mengatur video & canvas sendiri.
+       Hanya pastikan body full viewport. */
+
+    #ui-container {
+      position: fixed;
       top: 0;
       left: 0;
-      width: 100vw;
-      height: 100vh;
-      z-index: 10;
+      width: 100%;
+      height: 100%;
+      z-index: 999;
       pointer-events: none;
       display: flex;
       flex-direction: column;
@@ -32,13 +37,27 @@
       padding: 16px;
     }
 
-    #ui-overlay > * { pointer-events: auto; }
+    #ui-container > * { pointer-events: auto; }
 
-    #top-bar {
+    #header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
       gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    #nama-badge {
+      background: rgba(0,0,0,0.45);
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: 600;
+      backdrop-filter: blur(4px);
+      pointer-events: none;
+      width: fit-content;
+      margin-bottom: 6px;
     }
 
     #status-badge {
@@ -55,12 +74,17 @@
     }
 
     #status-badge.scanning {
-      background: rgba(255, 193, 7, 0.85);
+      background: rgba(255, 193, 7, 0.9);
       color: #332200;
     }
 
     #status-badge.found {
-      background: rgba(40, 167, 69, 0.85);
+      background: rgba(40, 167, 69, 0.9);
+      color: #fff;
+    }
+
+    #status-badge.error {
+      background: rgba(220, 53, 69, 0.9);
       color: #fff;
     }
 
@@ -74,6 +98,7 @@
 
     .scanning .dot { background: #332200; }
     .found .dot { background: #fff; animation: none; }
+    .error .dot { background: #fff; animation: none; }
 
     @keyframes pulse {
       0% { opacity: 1; transform: scale(1); }
@@ -82,7 +107,7 @@
     }
 
     #btn-ganti {
-      background: rgba(255,255,255,0.92);
+      background: rgba(255,255,255,0.95);
       border: none;
       padding: 10px 16px;
       border-radius: 10px;
@@ -96,7 +121,7 @@
 
     #btn-ganti:active {
       transform: scale(0.96);
-      background: rgba(240,240,240,0.95);
+      background: rgba(240,240,240,0.98);
     }
 
     #instructions {
@@ -105,7 +130,7 @@
       background: rgba(0,0,0,0.55);
       padding: 12px 16px;
       border-radius: 12px;
-      margin: 0 auto 10px auto;
+      margin: 0 auto 12px auto;
       max-width: 92vw;
       font-size: 13px;
       line-height: 1.5;
@@ -118,19 +143,16 @@
       word-break: break-all;
     }
 
-    #nama-badge {
-      position: absolute;
-      top: 16px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0,0,0,0.45);
-      color: #fff;
-      padding: 6px 12px;
-      border-radius: 16px;
-      font-size: 12px;
+    /* Pesan jika browser tidak support / kamera di blok */
+    #error-box {
+      display: none;
+      text-align: center;
+      padding: 14px 16px;
+      border-radius: 10px;
+      font-size: 13px;
       font-weight: 600;
-      z-index: 10;
-      pointer-events: none;
+      color: #fff;
+      background: rgba(200, 30, 30, 0.85);
       backdrop-filter: blur(4px);
     }
   </style>
@@ -139,7 +161,7 @@
     // Registrasi Shader Gradasi
     AFRAME.registerShader('gradient', {
       schema: {
-        topColor: { type: 'color', default: '#00d2ff', is: 'uniform' },
+        topColor:    { type: 'color', default: '#00d2ff', is: 'uniform' },
         bottomColor: { type: 'color', default: '#3a7bd5', is: 'uniform' }
       },
       vertexShader: `
@@ -160,33 +182,58 @@
     });
 
     document.addEventListener('DOMContentLoaded', () => {
-      const marker = document.querySelector('#hiro-marker');
-      const statusBadge = document.querySelector('#status-badge');
-      const btnGanti = document.querySelector('#btn-ganti');
+      const marker       = document.getElementById('hiro-marker');
+      const statusBadge  = document.getElementById('status-badge');
+      const btnGanti     = document.getElementById('btn-ganti');
+      const errorBox     = document.getElementById('error-box');
 
-      const objects = ['obj-box', 'obj-sphere', 'obj-cylinder'];
-      let currentIndex = 0;
+      const setError = (msg) => {
+        statusBadge.className = 'error';
+        statusBadge.innerHTML = '<span class="dot"></span> ' + msg;
+        errorBox.style.display = 'block';
+        errorBox.textContent = 'Jika dibuka di desktop, pastikan ada kamera. Buka di HP untuk pengalaman AR terbaik.';
+      };
 
-      // Event Marker Found / Lost
+      // Cek secure context
+      if (!window.isSecureContext) {
+        setError('Gunakan HTTPS/localhost');
+        console.warn('Not Secure Context');
+      }
+
+      // Pastikan scene loaded sebelum pasang event marker
+      const scene = document.querySelector('a-scene');
+      scene.addEventListener('loaded', () => {
+        console.log('Scene loaded');
+      });
+
+      // Jika AR.js berhasil/gagal load video
+      window.addEventListener('arjs-video-loaded', () => {
+        console.log('Camera active');
+      });
+
+      window.addEventListener('camera-error', (e) => {
+        console.error('Camera error', e);
+        setError('Akses kamera ditolak');
+      });
+
+      // Marker events
       marker.addEventListener('markerFound', () => {
-        statusBadge.classList.remove('scanning');
-        statusBadge.classList.add('found');
+        statusBadge.className = 'found';
         statusBadge.innerHTML = '<span class="dot"></span> Target Ditemukan ✓';
       });
 
       marker.addEventListener('markerLost', () => {
-        statusBadge.classList.remove('found');
-        statusBadge.classList.add('scanning');
+        statusBadge.className = 'scanning';
         statusBadge.innerHTML = '<span class="dot"></span> Mencari Marker...';
       });
 
-      // Tombol Ganti Objek
+      // Switch object
+      const objects = ['obj-box', 'obj-sphere', 'obj-cylinder'];
+      let currentIndex = 0;
+
       btnGanti.addEventListener('click', () => {
-        // Sembunyikan objek saat ini
         document.getElementById(objects[currentIndex]).setAttribute('visible', false);
-        // Pindah ke objek berikutnya
         currentIndex = (currentIndex + 1) % objects.length;
-        // Tampilkan objek baru
         document.getElementById(objects[currentIndex]).setAttribute('visible', true);
       });
     });
@@ -194,15 +241,17 @@
 </head>
 <body>
 
-  <!-- Overlay UI -->
-  <div id="ui-overlay">
-    <div id="nama-badge">Nico Davin — XI PPLG B</div>
-
-    <div id="top-bar">
-      <div id="status-badge" class="scanning">
-        <span class="dot"></span> Mencari Marker...
+  <!-- UI Overlay -->
+  <div id="ui-container">
+    <div>
+      <div id="nama-badge">Nico Davin — XI PPLG B</div>
+      <div id="header">
+        <div id="status-badge" class="scanning">
+          <span class="dot"></span> Mencari Marker...
+        </div>
+        <button id="btn-ganti">Ganti Object</button>
       </div>
-      <button id="btn-ganti">Ganti Object</button>
+      <div id="error-box"></div>
     </div>
 
     <div id="instructions">
@@ -214,15 +263,21 @@
     </div>
   </div>
 
-  <!-- Scene AR -->
-  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" renderer="logarithmicDepthBuffer: true; antialias: true;">
+  <!-- A-Frame AR Scene -->
+  <a-scene
+    embedded
+    vr-mode-ui="enabled: false"
+    arjs="sourceType: webcam; debugUIEnabled: false;"
+    renderer="logarithmicDepthBuffer: true; antialias: true; alpha: true;"
+    style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;">
 
     <!-- Marker Hiro -->
     <a-marker preset="hiro" id="hiro-marker" emitevents="true">
-      <!-- Container objek yang berputar -->
-      <a-entity 
-        id="spinning-objects" 
-        position="0 0.25 0" 
+
+      <!-- Container objek yang berputar (y: 0.25 agar tidak menancap ke marker) -->
+      <a-entity
+        id="spinning-objects"
+        position="0 0.25 0"
         animation="property: rotation; to: 0 360 0; loop: true; dur: 3000; easing: linear">
 
         <a-box
@@ -248,21 +303,21 @@
           height="0.5"
           visible="false">
         </a-cylinder>
-
       </a-entity>
 
       <!-- Teks 3D di atas objek -->
-      <a-text 
-        value="Hello AR!" 
-        align="center" 
-        position="0 0.8 0" 
-        color="#FFFFFF" 
+      <a-text
+        value="Hello AR!"
+        align="center"
+        position="0 0.9 0"
+        color="#FFFFFF"
+        side="double"
         scale="1.5 1.5 1.5"
         font="kelsonsans">
       </a-text>
     </a-marker>
 
-    <!-- Kamera -->
+    <!-- Kamera AR -->
     <a-entity camera></a-entity>
 
   </a-scene>
