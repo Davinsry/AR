@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>WebAR - Nico Davin (XI PPLG B)</title>
+
+  <!-- A-Frame & AR.js CDN -->
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #000;
+    }
+
+    #ui-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 10;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 16px;
+    }
+
+    #ui-overlay > * { pointer-events: auto; }
+
+    #top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    #status-badge {
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 700;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    #status-badge.scanning {
+      background: rgba(255, 193, 7, 0.85);
+      color: #332200;
+    }
+
+    #status-badge.found {
+      background: rgba(40, 167, 69, 0.85);
+      color: #fff;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      animation: pulse 1.5s infinite;
+    }
+
+    .scanning .dot { background: #332200; }
+    .found .dot { background: #fff; animation: none; }
+
+    @keyframes pulse {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    #btn-ganti {
+      background: rgba(255,255,255,0.92);
+      border: none;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-weight: 700;
+      color: #222;
+      cursor: pointer;
+      font-size: 13px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      transition: transform 0.1s, background 0.2s;
+    }
+
+    #btn-ganti:active {
+      transform: scale(0.96);
+      background: rgba(240,240,240,0.95);
+    }
+
+    #instructions {
+      text-align: center;
+      color: #fff;
+      background: rgba(0,0,0,0.55);
+      padding: 12px 16px;
+      border-radius: 12px;
+      margin: 0 auto 10px auto;
+      max-width: 92vw;
+      font-size: 13px;
+      line-height: 1.5;
+      backdrop-filter: blur(4px);
+    }
+
+    #instructions a {
+      color: #4fc3f7;
+      text-decoration: underline;
+      word-break: break-all;
+    }
+
+    #nama-badge {
+      position: absolute;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.45);
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: 600;
+      z-index: 10;
+      pointer-events: none;
+      backdrop-filter: blur(4px);
+    }
+  </style>
+
+  <script>
+    // Registrasi Shader Gradasi
+    AFRAME.registerShader('gradient', {
+      schema: {
+        topColor: { type: 'color', default: '#00d2ff', is: 'uniform' },
+        bottomColor: { type: 'color', default: '#3a7bd5', is: 'uniform' }
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying vec2 vUv;
+        uniform vec3 topColor;
+        uniform vec3 bottomColor;
+        void main() {
+          gl_FragColor = vec4(mix(bottomColor, topColor, vUv.y), 1.0);
+        }
+      `
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const marker = document.querySelector('#hiro-marker');
+      const statusBadge = document.querySelector('#status-badge');
+      const btnGanti = document.querySelector('#btn-ganti');
+
+      const objects = ['obj-box', 'obj-sphere', 'obj-cylinder'];
+      let currentIndex = 0;
+
+      // Event Marker Found / Lost
+      marker.addEventListener('markerFound', () => {
+        statusBadge.classList.remove('scanning');
+        statusBadge.classList.add('found');
+        statusBadge.innerHTML = '<span class="dot"></span> Target Ditemukan ✓';
+      });
+
+      marker.addEventListener('markerLost', () => {
+        statusBadge.classList.remove('found');
+        statusBadge.classList.add('scanning');
+        statusBadge.innerHTML = '<span class="dot"></span> Mencari Marker...';
+      });
+
+      // Tombol Ganti Objek
+      btnGanti.addEventListener('click', () => {
+        // Sembunyikan objek saat ini
+        document.getElementById(objects[currentIndex]).setAttribute('visible', false);
+        // Pindah ke objek berikutnya
+        currentIndex = (currentIndex + 1) % objects.length;
+        // Tampilkan objek baru
+        document.getElementById(objects[currentIndex]).setAttribute('visible', true);
+      });
+    });
+  </script>
+</head>
+<body>
+
+  <!-- Overlay UI -->
+  <div id="ui-overlay">
+    <div id="nama-badge">Nico Davin — XI PPLG B</div>
+
+    <div id="top-bar">
+      <div id="status-badge" class="scanning">
+        <span class="dot"></span> Mencari Marker...
+      </div>
+      <button id="btn-ganti">Ganti Object</button>
+    </div>
+
+    <div id="instructions">
+      <strong>Arahkan kamera ke Marker Hiro</strong><br>
+      Belum punya marker? Buka di layar lain:<br>
+      <a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" target="_blank" rel="noopener">
+        Lihat Gambar Marker Hiro
+      </a>
+    </div>
+  </div>
+
+  <!-- Scene AR -->
+  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" renderer="logarithmicDepthBuffer: true; antialias: true;">
+
+    <!-- Marker Hiro -->
+    <a-marker preset="hiro" id="hiro-marker" emitevents="true">
+      <!-- Container objek yang berputar -->
+      <a-entity 
+        id="spinning-objects" 
+        position="0 0.25 0" 
+        animation="property: rotation; to: 0 360 0; loop: true; dur: 3000; easing: linear">
+
+        <a-box
+          id="obj-box"
+          material="shader: gradient; topColor: #00d2ff; bottomColor: #3a7bd5"
+          depth="0.5"
+          height="0.5"
+          width="0.5"
+          visible="true">
+        </a-box>
+
+        <a-sphere
+          id="obj-sphere"
+          material="shader: gradient; topColor: #00d2ff; bottomColor: #3a7bd5"
+          radius="0.25"
+          visible="false">
+        </a-sphere>
+
+        <a-cylinder
+          id="obj-cylinder"
+          material="shader: gradient; topColor: #00d2ff; bottomColor: #3a7bd5"
+          radius="0.25"
+          height="0.5"
+          visible="false">
+        </a-cylinder>
+
+      </a-entity>
+
+      <!-- Teks 3D di atas objek -->
+      <a-text 
+        value="Hello AR!" 
+        align="center" 
+        position="0 0.8 0" 
+        color="#FFFFFF" 
+        scale="1.5 1.5 1.5"
+        font="kelsonsans">
+      </a-text>
+    </a-marker>
+
+    <!-- Kamera -->
+    <a-entity camera></a-entity>
+
+  </a-scene>
+
+</body>
+</html>
