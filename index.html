@@ -9,6 +9,10 @@
   <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,700&family=Lato:wght@300&display=swap"
+    rel="stylesheet" />
+
   <style>
     * {
       margin: 0;
@@ -17,49 +21,180 @@
     }
 
     body {
-      font-family: 'Georgia', serif;
       background: #000;
       overflow: hidden;
+      font-family: 'Lato', sans-serif;
     }
 
-    /* UI Overlay */
-    #ui {
+    a-scene {
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #hai-cantik {
       position: fixed;
-      top: 0;
-      left: 0;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -60%);
+      z-index: 9999;
+      pointer-events: none;
+      text-align: center;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+
+    #hai-cantik.show {
+      opacity: 1;
+      animation: floatUp 0.7s cubic-bezier(.22, 1, .36, 1) forwards;
+    }
+
+    #hai-cantik.hide {
+      animation: floatDown 0.5s ease forwards;
+    }
+
+    @keyframes floatUp {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -45%);
+      }
+
+      to {
+        opacity: 1;
+        transform: translate(-50%, -60%);
+      }
+    }
+
+    @keyframes floatDown {
+      from {
+        opacity: 1;
+        transform: translate(-50%, -60%);
+      }
+
+      to {
+        opacity: 0;
+        transform: translate(-50%, -75%);
+      }
+    }
+
+    .main-text {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: clamp(52px, 10vw, 96px);
+      font-weight: 700;
+      background: linear-gradient(135deg, #fff 0%, #f9a8d4 40%, #e879f9 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 32px rgba(249, 168, 212, 0.7)) drop-shadow(0 0 8px rgba(232, 121, 249, 0.5));
+      animation: shimmer 3s ease-in-out infinite;
+      white-space: nowrap;
+      line-height: 1.1;
+    }
+
+    @keyframes shimmer {
+
+      0%,
+      100% {
+        filter: drop-shadow(0 0 32px rgba(249, 168, 212, 0.7)) drop-shadow(0 0 8px rgba(232, 121, 249, 0.5));
+      }
+
+      50% {
+        filter: drop-shadow(0 0 48px rgba(249, 168, 212, 1)) drop-shadow(0 0 20px rgba(232, 121, 249, 0.9));
+      }
+    }
+
+    .sub-text {
+      font-family: 'Lato', sans-serif;
+      font-weight: 300;
+      font-size: clamp(13px, 2vw, 18px);
+      color: rgba(255, 255, 255, 0.6);
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      margin-top: 10px;
+      animation: fadePulse 2.5s ease-in-out infinite;
+    }
+
+    @keyframes fadePulse {
+
+      0%,
+      100% {
+        opacity: 0.5;
+      }
+
+      50% {
+        opacity: 1;
+      }
+    }
+
+    .hearts {
+      position: fixed;
       width: 100%;
       height: 100%;
+      top: 0;
+      left: 0;
       pointer-events: none;
-      z-index: 999;
+      z-index: 9998;
+      overflow: hidden;
+      opacity: 0;
+      transition: opacity 0.8s ease;
     }
 
-    /* Status badge */
+    .hearts.show {
+      opacity: 1;
+    }
+
+    .heart {
+      position: absolute;
+      animation: riseUp linear infinite;
+      opacity: 0;
+    }
+
+    @keyframes riseUp {
+      0% {
+        transform: translateY(0) scale(0.6);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 0.8;
+      }
+
+      90% {
+        opacity: 0.4;
+      }
+
+      100% {
+        transform: translateY(-90vh) scale(1.1);
+        opacity: 0;
+      }
+    }
+
     #status {
       position: fixed;
       top: 20px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.65);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.13);
       color: #fff;
-      padding: 10px 22px;
+      padding: 9px 20px;
       border-radius: 99px;
-      font-size: 13px;
+      font-size: 12px;
       letter-spacing: 0.08em;
       display: flex;
       align-items: center;
       gap: 8px;
+      z-index: 9999;
       transition: all 0.4s ease;
-      pointer-events: none;
     }
 
-    #status .dot {
-      width: 8px;
-      height: 8px;
+    .dot {
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
       background: #f87171;
-      animation: pulse 1.4s ease-in-out infinite;
+      animation: blink 1.4s ease-in-out infinite;
     }
 
     #status.found .dot {
@@ -68,41 +203,38 @@
     }
 
     #status.found {
-      border-color: rgba(74, 222, 128, 0.4);
-      background: rgba(0, 0, 0, 0.75);
+      border-color: rgba(74, 222, 128, 0.35);
     }
 
-    @keyframes pulse {
+    @keyframes blink {
 
       0%,
       100% {
         opacity: 1;
-        transform: scale(1);
       }
 
       50% {
-        opacity: 0.5;
-        transform: scale(0.8);
+        opacity: 0.3;
       }
     }
 
-    /* Instruction card */
     #instruction {
       position: fixed;
-      bottom: 36px;
+      bottom: 30px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.6);
+      background: rgba(0, 0, 0, 0.55);
       backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      color: rgba(255, 255, 255, 0.85);
-      padding: 14px 24px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.8);
+      padding: 14px 22px;
       border-radius: 16px;
       font-size: 12px;
       text-align: center;
-      line-height: 1.7;
-      max-width: 320px;
-      pointer-events: all;
+      line-height: 1.8;
+      z-index: 9999;
+      max-width: 300px;
+      transition: opacity 0.5s ease;
     }
 
     #instruction a {
@@ -111,18 +243,8 @@
       font-weight: bold;
     }
 
-    #instruction a:hover {
-      text-decoration: underline;
-    }
-
-    /* Corner watermark */
-    #watermark {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      font-size: 11px;
-      color: rgba(255, 255, 255, 0.25);
-      letter-spacing: 0.1em;
+    #instruction.hide {
+      opacity: 0;
       pointer-events: none;
     }
   </style>
@@ -130,99 +252,70 @@
 
 <body>
 
-  <!-- AR Scene -->
   <a-scene embedded
     arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
-    renderer="logarithmicDepthBuffer: true; antialias: true;" vr-mode-ui="enabled: false"
-    loading-screen="dotsColor: #f9a8d4; backgroundColor: black">
-
-    <!-- Hiro Marker -->
-    <a-marker preset="hiro" id="hiro-marker">
-
-      <!-- Gradient box via shader -->
-      <a-entity id="main-box" geometry="primitive: box; width: 0.6; height: 0.6; depth: 0.6"
-        material="shader: flat; color: #ec4899"
-        animation="property: rotation; to: 0 360 0; loop: true; dur: 3000; easing: linear"
-        animation__scale="property: scale; from: 1 1 1; to: 1.08 1.08 1.08; loop: true; dur: 900; dir: alternate; easing: easeInOutSine"
-        position="0 0.3 0">
-      </a-entity>
-
-      <!-- Inner glow sphere -->
-      <a-entity geometry="primitive: sphere; radius: 0.28"
-        material="shader: flat; color: #f472b6; opacity: 0.35; transparent: true"
-        animation="property: rotation; to: 360 0 360; loop: true; dur: 4000; easing: linear"
-        animation__pulse="property: material.opacity; from: 0.2; to: 0.5; loop: true; dur: 1200; dir: alternate; easing: easeInOutSine"
-        position="0 0.3 0">
-      </a-entity>
-
-      <!-- "Hai Cantikk" teks 3D -->
-      <a-entity text="value: Hai Cantikk 💖; color: #fff; align: center; width: 2.2; font: mozillavr"
-        position="0 0.85 0"
-        animation__float="property: position; from: 0 0.85 0; to: 0 0.98 0; loop: true; dur: 1600; dir: alternate; easing: easeInOutSine"
-        scale="1 1 1">
-      </a-entity>
-
-      <!-- Sub-teks kecil di bawah box -->
-      <a-entity text="value: You're beautiful 🌸; color: #f9a8d4; align: center; width: 1.8; font: mozillavr"
-        position="0 -0.05 0"
-        animation__float2="property: position; from: 0 -0.05 0; to: 0 0.02 0; loop: true; dur: 2000; dir: alternate; easing: easeInOutSine">
-      </a-entity>
-
-      <!-- Ring dekoratif -->
-      <a-entity geometry="primitive: torus; radius: 0.55; radiusTubular: 0.015"
-        material="shader: flat; color: #f472b6; opacity: 0.7; transparent: true" position="0 0.3 0" rotation="90 0 0"
-        animation="property: rotation; from: 90 0 0; to: 90 360 0; loop: true; dur: 5000; easing: linear">
-      </a-entity>
-
-      <!-- Ring ke-2 miring -->
-      <a-entity geometry="primitive: torus; radius: 0.45; radiusTubular: 0.01"
-        material="shader: flat; color: #e879f9; opacity: 0.5; transparent: true" position="0 0.3 0" rotation="45 0 0"
-        animation="property: rotation; from: 45 360 0; to: 45 0 0; loop: true; dur: 3500; easing: linear">
-      </a-entity>
-
-    </a-marker>
-
-    <!-- Kamera AR -->
+    renderer="logarithmicDepthBuffer: true;" vr-mode-ui="enabled: false">
+    <a-marker preset="hiro" id="hiro-marker"></a-marker>
     <a-entity camera></a-entity>
-
   </a-scene>
 
-  <!-- UI Overlay -->
-  <div id="ui">
-    <div id="status">
-      <span class="dot"></span>
-      <span id="status-text">Mencari Hiro Marker...</span>
-    </div>
+  <div id="hai-cantik">
+    <div class="main-text">Hai Cantikk&nbsp;💖</div>
+    <div class="sub-text">You're so beautiful</div>
+  </div>
 
-    <div id="instruction">
-      Arahkan kamera ke <strong>Hiro Marker</strong><br />
-      <a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" target="_blank">
-        👆 Buka gambar Hiro Marker di sini
-      </a>
-      <br /><span style="opacity:0.6; font-size:11px;">Buka di tab lain → tampilkan di layar lain → arahkan kamera ke
-        sana</span>
-    </div>
+  <div class="hearts" id="hearts"></div>
 
-    <div id="watermark">WebAR · AR.js</div>
+  <div id="status">
+    <span class="dot"></span>
+    <span id="status-text">Mencari Hiro Marker...</span>
+  </div>
+
+  <div id="instruction">
+    Arahkan kamera ke <strong>Hiro Marker</strong><br />
+    <a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" target="_blank">
+      👆 Buka gambar Hiro Marker
+    </a><br />
+    <span style="opacity:0.5;font-size:11px;">Tampilkan di layar lain → arahkan kamera ke sana</span>
   </div>
 
   <script>
     const marker = document.getElementById('hiro-marker');
+    const overlay = document.getElementById('hai-cantik');
     const statusEl = document.getElementById('status');
     const statusText = document.getElementById('status-text');
     const instruction = document.getElementById('instruction');
+    const heartsEl = document.getElementById('hearts');
+
+    const emojis = ['💖', '💗', '💕', '✨', '🌸', '💫'];
+    for (let i = 0; i < 18; i++) {
+      const h = document.createElement('span');
+      h.classList.add('heart');
+      h.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      h.style.left = Math.random() * 100 + 'vw';
+      h.style.bottom = '-30px';
+      h.style.animationDuration = (4 + Math.random() * 5) + 's';
+      h.style.animationDelay = (Math.random() * 5) + 's';
+      h.style.fontSize = (14 + Math.random() * 14) + 'px';
+      heartsEl.appendChild(h);
+    }
 
     marker.addEventListener('markerFound', () => {
+      overlay.classList.remove('hide');
+      overlay.classList.add('show');
+      heartsEl.classList.add('show');
       statusEl.classList.add('found');
-      statusText.textContent = 'Target Ditemukan ✓';
-      instruction.style.opacity = '0';
-      instruction.style.transition = 'opacity 0.5s';
+      statusText.textContent = 'Marker ditemukan ✓';
+      instruction.classList.add('hide');
     });
 
     marker.addEventListener('markerLost', () => {
+      overlay.classList.remove('show');
+      overlay.classList.add('hide');
+      heartsEl.classList.remove('show');
       statusEl.classList.remove('found');
       statusText.textContent = 'Mencari Hiro Marker...';
-      instruction.style.opacity = '1';
+      instruction.classList.remove('hide');
     });
   </script>
 
