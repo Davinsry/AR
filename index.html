@@ -14,88 +14,79 @@
       margin: 0;
       padding: 0;
       overflow: hidden;
-      width: 100%;
-      height: 100%;
+      width: 100vw;
+      height: 100vh;
       font-family: 'Segoe UI', system-ui, sans-serif;
-      background: transparent;
+      background: #000;
     }
 
-    /* Video feed dari AR.js harus di belakang */
+    /* Video feed kamera */
     video {
       position: fixed !important;
       top: 0 !important;
       left: 0 !important;
-      width: 100% !important;
-      height: 100% !important;
+      width: 100vw !important;
+      height: 100vh !important;
       object-fit: cover !important;
-      z-index: 0 !important;
     }
 
-    /* Canvas A-Frame transparan agar video kelihatan */
     canvas.a-canvas {
       position: fixed !important;
       top: 0 !important;
       left: 0 !important;
-      width: 100% !important;
-      height: 100% !important;
-      z-index: 1 !important;
+      width: 100vw !important;
+      height: 100vh !important;
     }
 
-    /* Scene juga fixed agar tidak geser */
     a-scene {
       position: fixed !important;
-      top: 0;
-      left: 0;
-      width: 100% !important;
-      height: 100% !important;
-      z-index: 1 !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
     }
 
-    /* ====== UI MINIMALIS ====== */
+    /* ====== UI ====== */
     #ui-container {
       position: fixed;
       top: 0;
       left: 0;
-      width: 100%;
-      height: 100%;
+      width: 100vw;
+      height: 100vh;
       z-index: 999;
       pointer-events: none;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 14px;
     }
 
-    #ui-container > * { pointer-events: auto; }
-
-    /* Status badge di kiri atas */
     #status-badge {
-      width: fit-content;
-      padding: 8px 14px;
-      border-radius: 20px;
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      padding: 8px 16px;
+      border-radius: 999px;
       font-size: 13px;
       font-weight: 700;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
       display: inline-flex;
       align-items: center;
       gap: 6px;
       transition: background .3s, color .3s;
-      border: 1px solid rgba(255,255,255,0.15);
+      pointer-events: auto;
+      border: 1px solid rgba(255,255,255,0.12);
     }
 
     #status-badge.scanning {
-      background: rgba(255, 193, 7, 0.88);
+      background: rgba(255,193,7,0.9);
       color: #332200;
     }
 
     #status-badge.found {
-      background: rgba(40, 167, 69, 0.88);
+      background: rgba(40,167,69,0.9);
       color: #fff;
     }
 
     #status-badge.error {
-      background: rgba(220, 53, 69, 0.88);
+      background: rgba(220,53,69,0.9);
       color: #fff;
     }
 
@@ -116,43 +107,44 @@
       100% { opacity: 1; transform: scale(1); }
     }
 
-    /* Hint kecil di bawah tengah */
     #hint {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
       text-align: center;
       color: rgba(255,255,255,0.95);
-      background: rgba(0,0,0,0.35);
-      padding: 10px 14px;
-      border-radius: 10px;
-      margin: 0 auto 8px auto;
-      max-width: 90vw;
+      background: rgba(0,0,0,0.4);
+      padding: 10px 18px;
+      border-radius: 12px;
       font-size: 12px;
       font-weight: 500;
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
-      border: 1px solid rgba(255,255,255,0.08);
-      line-height: 1.45;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.1);
+      line-height: 1.5;
+      white-space: nowrap;
+      pointer-events: auto;
     }
 
     #hint a {
       color: #7ee8fa;
       text-decoration: underline;
-      word-break: break-all;
     }
 
     #error-box {
       display: none;
-      width: fit-content;
-      padding: 10px 14px;
+      position: absolute;
+      top: 56px;
+      left: 16px;
+      padding: 10px 16px;
       border-radius: 10px;
       font-size: 12px;
       font-weight: 600;
       color: #fff;
-      background: rgba(200, 30, 30, 0.82);
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
-      margin-top: 8px;
+      background: rgba(200,30,30,0.85);
+      pointer-events: auto;
     }
-  </style>
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -231,7 +223,7 @@
     <!-- Marker Hiro -->
     <a-marker preset="hiro" id="hiro-marker" emitevents="true">
 
-      <!-- Teks 3D "Hai Cantik" yang berputar -->
+      <!-- Teks 3D "Hai Cantik" diam menghadap user -->
       <a-text
         id="main-text"
         value="Hai Cantik"
@@ -240,8 +232,7 @@
         color="#FFD1DC"
         side="double"
         scale="2.5 2.5 2.5"
-        font="exo2bold"
-        animation="property: rotation; to: 0 360 0; loop: true; dur: 4000; easing: linear">
+        font="exo2bold">
       </a-text>
 
       <!-- Efek bayangan/bawah teks -->
